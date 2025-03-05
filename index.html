@@ -1,0 +1,164 @@
+# capitals-3d-explorer
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>World Capitals Chatbot</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/17.0.2/umd/react.development.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/17.0.2/umd/react-dom.development.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/react-spring@9.3.0/dist/react-spring.umd.min.js"></script>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+        const { useSpring, animated } = ReactSpring;
+
+        const CapitalsChatbot = () => {
+            const [messages, setMessages] = useState([]);
+            const [isBotReady, setIsBotReady] = useState(false);
+            const [isTapping, setIsTapping] = useState(false);
+            const [userInput, setUserInput] = useState('');
+
+            const capitals = {
+                "United States": "Washington, D.C.",
+                "France": "Paris",
+                "Japan": "Tokyo",
+                "Brazil": "Brasília",
+                "India": "New Delhi"
+            };
+
+            const botResponses = {
+                greetings: [
+                    "Hello! I know world capitals.",
+                    "Hi there! Want to learn about capitals?",
+                    "Greetings! I'm ready to chat."
+                ],
+                help: [
+                    "I can help you find capitals of countries!",
+                    "Ask me about any country's capital.",
+                    "I know capitals for many countries."
+                ]
+            };
+
+            const findCapital = (country) => {
+                const normalizedCountry = country.trim().toLowerCase();
+                for (let [key, capital] of Object.entries(capitals)) {
+                    if (key.toLowerCase() === normalizedCountry) {
+                        return `The capital of ${key} is ${capital}.`;
+                    }
+                }
+                return "Sorry, I don't know that country's capital.";
+            };
+
+            const generateBotResponse = (input) => {
+                const lowercaseInput = input.toLowerCase();
+
+                if (lowercaseInput.includes('capital of')) {
+                    const country = lowercaseInput.split('capital of')[1].trim();
+                    return findCapital(country);
+                }
+
+                for (let country in capitals) {
+                    if (lowercaseInput.includes(country.toLowerCase())) {
+                        return findCapital(country);
+                    }
+                }
+
+                if (['hi', 'hello', 'hey'].some(greeting => lowercaseInput.includes(greeting))) {
+                    return botResponses.greetings[Math.floor(Math.random() * botResponses.greetings.length)];
+                }
+
+                return botResponses.help[Math.floor(Math.random() * botResponses.help.length)];
+            };
+
+            const handleTap = () => {
+                setIsTapping(true);
+                setIsBotReady(true);
+                setTimeout(() => setIsTapping(false), 500);
+            };
+
+            const handleSendMessage = () => {
+                if (!userInput.trim()) return;
+
+                const newMessages = [
+                    ...messages, 
+                    { text: userInput, sender: 'user' }
+                ];
+                setMessages(newMessages);
+
+                const botResponse = generateBotResponse(userInput);
+                setTimeout(() => {
+                    setMessages(prev => [
+                        ...prev, 
+                        { text: botResponse, sender: 'bot' }
+                    ]);
+                }, 1000);
+
+                setUserInput('');
+            };
+
+            const tapAnimation = useSpring({
+                transform: isTapping ? 'scale(1.2)' : 'scale(1)',
+                config: { tension: 300 }
+            });
+
+            return (
+                <div className="h-screen bg-gray-100 flex items-center justify-center">
+                    <div className="w-full max-w-md bg-white rounded-xl shadow-lg p-6 relative">
+                        <div className="h-96 overflow-y-auto mb-4 space-y-2">
+                            {messages.map((msg, index) => (
+                                <div 
+                                    key={index} 
+                                    className={`p-2 rounded-lg max-w-[80%] ${
+                                        msg.sender === 'bot' 
+                                        ? 'bg-blue-100 self-start mr-auto' 
+                                        : 'bg-green-100 self-end ml-auto'
+                                    }`}
+                                >
+                                    {msg.text}
+                                </div>
+                            ))}
+                        </div>
+
+                        {!isBotReady && (
+                            <animated.div 
+                                style={tapAnimation}
+                                onClick={handleTap}
+                                className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 
+                                           w-24 h-24 bg-blue-500 rounded-full flex items-center justify-center 
+                                           text-white cursor-pointer hover:bg-blue-600 transition"
+                            >
+                                Tap to Talk
+                            </animated.div>
+                        )}
+
+                        {isBotReady && (
+                            <div className="flex space-x-2">
+                                <input 
+                                    type="text" 
+                                    value={userInput}
+                                    onChange={(e) => setUserInput(e.target.value)}
+                                    onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                                    className="flex-grow p-2 border rounded-lg"
+                                    placeholder="Type your message..."
+                                />
+                                <button 
+                                    onClick={handleSendMessage}
+                                    className="bg-blue-500 text-white p-2 rounded-lg"
+                                >
+                                    Send
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        };
+
+        ReactDOM.render(<CapitalsChatbot />, document.getElementById('root'));
+    </script>
+</body>
+</html>
